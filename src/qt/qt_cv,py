@@ -1,0 +1,54 @@
+from PySide2.QtWidgets import *
+from PySide2.QtGui import *
+import sys
+import cv2
+import numpy as np
+
+
+class Mainwindow(QWidget):
+    def __init__(self, parent= None):
+        QWidget.__init__(self, parent)
+        self.setWindowTitle('image viewer')
+        self.imageLabel = QLabel()
+        self.imageLabel.setFrameStyle(QFrame.Panel|QFrame.Sunken)
+        self.imageLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.imageLabel.setScaledContents(True)
+        self.imageLabel.setPixmap(QPixmap())
+
+        self.button = QPushButton('&cam', self)
+        self.button.clicked.connect(self.clicked)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.imageLabel)
+        layout.addWidget(self.button)
+        self.setLayout(layout)
+
+        self.resize(QApplication.primaryScreen().availableSize() * 2 / 5)
+
+
+    def displayCam(self):
+        cap = cv2.VideoCapture(0)
+        if cap.isOpened():
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                # 색상 구조 변환 (BGR(cv) -> RGB(Qt))
+                img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, c = img.shape
+                qImg = QImage(img.data, w, h, w * c, QImage.Format_RGB888)
+                pixmap = QPixmap.fromImage(qImg)
+                self.imageLabel.setPixmap(pixmap)
+
+                if cv2.waitKey(0):
+                    break
+        cv2.release()
+        cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = Mainwindow()
+    window.show()
+    window.displayCam()
+
+    app.exec_()
